@@ -1,0 +1,2 @@
+destination: ff:ff:ff:ff:ff:ff
+name: Broadcast
