@@ -1,0 +1,2 @@
+0 0 * * * /usr/sbin/logwatch --format text --detail High --range yesterday --mailto maxim.nelasov@yandex.ru --service All > /dev/null 2>&1
+

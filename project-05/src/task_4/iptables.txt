@@ -1,0 +1,5 @@
+Chain INPUT (policy ACCEPT)
+num  target     prot opt source               destination         
+1    LIBVIRT_INP  0    --  0.0.0.0/0            0.0.0.0/0           
+2    DROP       6    --  0.0.0.0/0            0.0.0.0/0            tcp dpt:80
+
