@@ -1,0 +1,5 @@
+some_operating_mode_1.py: режим работы ECB
+some_operating_mode_2.py: режим работы CBC
+some_operating_mode_3.py: режим работы CFB
+some_operating_mode_4.py: режим работы OFB
+some_operating_mode_5.py: режим работы CTR
