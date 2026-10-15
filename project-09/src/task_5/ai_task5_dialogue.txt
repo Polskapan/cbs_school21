@@ -1,0 +1,105 @@
+Шаг 1. Запрос: "Дай пошаговую инструкцию для создания PKI в Kali
+Linux: сгенерировать приватный ключ CA с aes256, создать
+самоподписанный корневой сертификат, сгенерировать ключ сервера,
+создать CSR, подписать CSR корневым сертификатом и получить
+server.crt. Используй passphrase 'school21'. Укажи конкретные
+команды openssl с необходимыми опциями."
+---------------------------------------------------------------
+
+Ответ:
+
+1) Директории:
+   mkdir -p pki/certs pki/private pki/newcerts
+
+2) Приватный ключ CA (RSA, зашифрован AES-256):
+   openssl genrsa -aes256 -passout pass:school21 -out pki/private/CAkey.key 4096
+
+3) Самоподписанный корневой сертификат (X.509, срок — 10 лет,
+   sha256, поля O=School-21, OU=RootCertificate):
+   openssl req -x509 -new -key pki/private/CAkey.key -passin pass:school21 \
+     -days 3650 -sha256 \
+     -subj "/O=School-21/OU=RootCertificate/CN=School-21 Root CA" \
+     -out pki/certs/CAcert.crt
+
+4) Приватный ключ сервера (тоже AES-256):
+   openssl genrsa -aes256 -passout pass:school21 -out pki/private/server.key 4096
+
+5) CSR сервера (O=OtherSchool, OU=SomeServer):
+   openssl req -new -key pki/private/server.key -passin pass:school21 \
+     -subj "/O=OtherSchool/OU=SomeServer/CN=server" \
+     -out pki/newcerts/server.csr
+
+6) Подпись CSR корневым CA (получаем server.crt, срок — ~2.25 года,
+   создаём serial-файл автоматически):
+   openssl x509 -req -in pki/newcerts/server.csr \
+     -CA pki/certs/CAcert.crt -CAkey pki/private/CAkey.key -passin pass:school21 \
+     -CAcreateserial -days 825 -sha256 \
+     -out pki/certs/server.crt
+
+Комментарий от клода: команды скопировал и выполнил в терминале как
+администратор. -passout / -passin с pass:school21 используются,
+чтобы не вводить passphrase интерактивно (иначе openssl запросит её
+в консоли — я использовал неинтерактивный режим для автоматизации,
+но пароль тот же самый, "school21", как указано в задании).
+-subj задаёт поля сертификата без интерактивного диалога req.
+Все 6 команд выполнены успешно, ошибок не было.
+
+Шаг 2.
+Запрос: "Соответствует ли этот сертификат требованиям задания?
+Проверь поля Organization (O) и Organizational Unit (OU)."
+(приложен вывод `openssl x509 -in certs/CAcert.crt -text -noout`
+и `openssl x509 -in certs/server.crt -text -noout`)
+
+Ответ:
+
+- CAcert.crt: Subject/Issuer = O=School-21, OU=RootCertificate,
+  CN=School-21 Root CA — совпадает (Issuer == Subject, т.к.
+  сертификат самоподписанный). X509v3 Basic Constraints:
+  CA:TRUE (critical) — корректно, это обязательный признак
+  корневого/CA-сертификата, иначе им нельзя подписывать другие
+  сертификаты.
+- server.crt: Subject = O=OtherSchool, OU=SomeServer, CN=server;
+  Issuer = O=School-21, OU=RootCertificate, CN=School-21 Root CA
+  — совпадает с тем, что server подписан именно этим CA.
+  Оба поля (O и OU) соответствуют заданию.
+
+Замечаний по полям O/OU нет — ошибок не найдено, исправления не
+потребовались. Дополнительно AI отметил, что можно проверить
+цепочку доверия командой:
+   openssl verify -CAfile certs/CAcert.crt certs/server.crt
+что и было сделано — результат: "certs/server.crt: OK".
+
+Запрос: "Напиши bash-скрипт, который проверяет, что в директории
+pki существуют все нужные поддиректории и файлы (certs/CAcert.crt,
+private/CAkey.key, newcerts/server.csr, certs/server.crt).
+Запусти скрипт."
+
+AI сгенерировал check_pki.sh, который:
+- проверяет наличие поддиректорий certs/, private/, newcerts/;
+- проверяет наличие 4 обязательных файлов и выводит их размер;
+- дополнительно верифицирует server.crt по CAcert.crt через
+  openssl verify (расширение сверх минимального требования —
+  полезно, чтобы убедиться не только в наличии файлов, но и в их
+  корректности как цепочки сертификатов);
+- завершает работу с кодом 0, если всё в порядке, и 1 — если
+  чего-то не хватает.
+
+Результат запуска: все проверки [ OK ], итог — "структура PKI
+корректна". Ничего вручную добавлять не потребовалось.
+
+---------------------------------------------------------------
+Итог
+---------------------------------------------------------------
+
+Структура директории pki/:
+    pki/
+      certs/
+        CAcert.crt   — самоподписанный корневой сертификат CA
+        server.crt   — сертификат сервера, подписанный CA
+      private/
+        CAkey.key    — приватный ключ CA (RSA 4096, AES-256, passphrase school21)
+        server.key   — приватный ключ сервера (RSA 4096, AES-256, passphrase school21)
+      newcerts/
+        server.csr   — запрос на подпись сертификата сервера
+
+Проверка openssl verify -CAfile certs/CAcert.crt certs/server.crt → OK.

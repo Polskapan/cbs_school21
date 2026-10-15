@@ -1,0 +1,2 @@
+30;alice_secret = compute_shared_secret(bob_public, alice_private, p)
+31;bob_secret = compute_shared_secret(alice_public, bob_private, p)
