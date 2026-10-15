@@ -1,0 +1,31 @@
+alert tcp $HOME_NET any -> any 4444 (msg:"MALICIOUS C2 handshake to command-and-control server on port 4444"; \
+    flow:to_server; \
+    content:"C2|3A| handshake"; depth:13; \
+    dsize:13; \
+    classtype:trojan-activity; \
+    reference:url,attack.mitre.org/techniques/T1071/; \
+    sid:1000001; rev:1;)
+
+alert tcp $HOME_NET any -> any 8080 (msg:"MALICIOUS malware download - GET /malware from badsite.com with EvilBot User-Agent"; \
+    flow:to_server; \
+    content:"GET /malware"; depth:12; \
+    content:"Host|3A| badsite.com"; distance:0; \
+    content:"User-Agent|3A| EvilBot"; distance:0; \
+    classtype:trojan-activity; \
+    reference:url,attack.mitre.org/techniques/T1105/; \
+    sid:1000002; rev:1;)
+
+alert icmp $HOME_NET any -> any any (msg:"MALICIOUS ICMP tunneling - suspicious payload in echo request"; \
+    itype:8; icode:0; \
+    content:"ICMP_TUNNEL_"; depth:12; \
+    dsize:>12; \
+    classtype:bad-unknown; \
+    reference:url,attack.mitre.org/techniques/T1048.003/; \
+    sid:1000003; rev:1;)
+
+alert dns $HOME_NET any -> any 53 (msg:"MALICIOUS DNS query for known-bad domain malicious-domain.com"; \
+    dns.query; \
+    content:"malicious-domain.com"; nocase; bsize:20; \
+    classtype:trojan-activity; \
+    reference:url,attack.mitre.org/techniques/T1071.004/; \
+    sid:1000004; rev:1;)
