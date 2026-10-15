@@ -1,0 +1,5 @@
+1. Будет 0
+
+2. 1010 и 0000
+
+3. (A XOR B) XOR A = (A XOR A) XOR B = 0 XOR B = B
